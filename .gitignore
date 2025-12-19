@@ -15,3 +15,6 @@
 .beads/daemon.lock
 .beads/daemon.log
 .git/beads-worktrees/
+
+# Claude
+./claude/settings.local.json

@@ -1,0 +1,21 @@
+{
+  "name": "principles-garden",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "dev:api": "pnpm --filter @principles/api dev",
+    "dev:party": "pnpm --filter @principles/partykit dev",
+    "dev:client": "pnpm --filter @principles/client dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.15.1"
+}

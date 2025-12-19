@@ -1,0 +1,21 @@
+{
+  "name": "@principles/partykit",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "partykit dev",
+    "build": "partykit build",
+    "deploy": "partykit deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@principles/shared": "workspace:*",
+    "yjs": "^13.6.21",
+    "y-partykit": "^0.0.25"
+  },
+  "devDependencies": {
+    "partykit": "^0.0.111",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,17 @@
+# Environment
+.env*
+!.env.example
+.dev.vars
+
+# OS
+.DS_Store
+
+# Beads (local db files)
+.beads/beads.db
+.beads/beads.db-*
+.beads/bd.sock
+.beads/bd.pipe
+.beads/.exclusive-lock
+.beads/daemon.lock
+.beads/daemon.log
+.git/beads-worktrees/

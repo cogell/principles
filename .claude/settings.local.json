@@ -1,7 +1,26 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.partykit.io)",
+      "WebFetch(domain:github.com)",
+      "Bash(bd create:*)",
+      "Bash(bd dep add:*)",
+      "Bash(bd ready:*)",
+      "Bash(bd list:*)",
+      "Bash(bd show:*)",
+      "Bash(bd update:*)",
+      "Bash(bd sync:*)",
+      "Bash(mkdir:*)",
+      "Bash(bd onboard:*)",
+      "Bash(pnpm install:*)",
+      "Bash(cat:*)",
+      "Bash(bd close:*)",
+      "Bash(ln:*)",
+      "Bash(pnpm:*)",
+      "Bash(git push)",
+      "Bash(find:*)"
     ]
   }
 }

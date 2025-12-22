@@ -8,7 +8,7 @@ AUTH_BYPASS = "false"
 [[d1_databases]]
 binding = "DB"
 database_name = "principles"
-database_id = "local"
+database_id = "d0b3cf58-e378-44ae-bf1c-a5581775961a"
 
 [[r2_buckets]]
 binding = "R2"

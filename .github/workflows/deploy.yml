@@ -1,0 +1,214 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PNPM_VERSION: 9
+  NODE_VERSION: 20
+
+jobs:
+  # ============================================
+  # Detect which packages changed
+  # ============================================
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      shared: ${{ steps.filter.outputs.shared }}
+      api: ${{ steps.filter.outputs.api }}
+      client: ${{ steps.filter.outputs.client }}
+      partykit: ${{ steps.filter.outputs.partykit }}
+      migrations: ${{ steps.filter.outputs.migrations }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            shared:
+              - 'packages/shared/**'
+              - 'pnpm-lock.yaml'
+            api:
+              - 'packages/api/**'
+            client:
+              - 'packages/client/**'
+            partykit:
+              - 'packages/partykit/**'
+            migrations:
+              - 'packages/api/migrations/**'
+
+  # ============================================
+  # Build shared library (if any package changed)
+  # ============================================
+  build-shared:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.shared == 'true' ||
+      needs.detect-changes.outputs.api == 'true' ||
+      needs.detect-changes.outputs.client == 'true' ||
+      needs.detect-changes.outputs.partykit == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared
+        run: pnpm --filter @principles/shared build
+
+      - uses: actions/cache/save@v4
+        with:
+          path: |
+            packages/shared/dist
+            node_modules
+            packages/*/node_modules
+          key: build-${{ github.sha }}
+
+  # ============================================
+  # Run D1 migrations (if migrations changed)
+  # ============================================
+  run-migrations:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.migrations == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run D1 Migrations
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: packages/api
+          command: d1 migrations apply principles --remote
+
+  # ============================================
+  # Deploy API (if shared OR api changed)
+  # ============================================
+  deploy-api:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-shared, run-migrations]
+    if: |
+      always() &&
+      needs.build-shared.result == 'success' &&
+      (needs.run-migrations.result == 'success' || needs.run-migrations.result == 'skipped') &&
+      (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.api == 'true')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            packages/shared/dist
+            node_modules
+            packages/*/node_modules
+          key: build-${{ github.sha }}
+
+      - name: Deploy API to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: packages/api
+          command: deploy
+
+  # ============================================
+  # Deploy Client (if shared OR client changed)
+  # ============================================
+  deploy-client:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-shared]
+    if: |
+      always() &&
+      needs.build-shared.result == 'success' &&
+      (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.client == 'true')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            packages/shared/dist
+            node_modules
+            packages/*/node_modules
+          key: build-${{ github.sha }}
+
+      - name: Build Client
+        run: pnpm --filter @principles/client build
+
+      - name: Deploy Client to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: packages/client
+          command: deploy
+
+  # ============================================
+  # Deploy PartyKit (if shared OR partykit changed)
+  # ============================================
+  deploy-partykit:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-shared]
+    if: |
+      always() &&
+      needs.build-shared.result == 'success' &&
+      (needs.detect-changes.outputs.shared == 'true' || needs.detect-changes.outputs.partykit == 'true')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            packages/shared/dist
+            node_modules
+            packages/*/node_modules
+          key: build-${{ github.sha }}
+
+      - name: Deploy PartyKit
+        run: pnpm --filter @principles/partykit deploy
+        env:
+          PARTYKIT_TOKEN: ${{ secrets.PARTYKIT_TOKEN }}

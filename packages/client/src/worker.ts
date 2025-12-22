@@ -15,15 +15,32 @@ export default {
     if (url.pathname.startsWith('/api/')) {
       const apiUrl = new URL(url.pathname + url.search, env.API_URL);
 
-      // Forward the request to the API, preserving headers
-      const apiRequest = new Request(apiUrl.toString(), {
+      // Build headers, forwarding relevant ones
+      const headers = new Headers();
+      for (const [key, value] of request.headers) {
+        // Forward auth and content headers
+        if (
+          key.toLowerCase() === 'content-type' ||
+          key.toLowerCase() === 'cf-access-authenticated-user-email' ||
+          key.toLowerCase() === 'accept'
+        ) {
+          headers.set(key, value);
+        }
+      }
+
+      // Forward the request to the API
+      const apiResponse = await fetch(apiUrl.toString(), {
         method: request.method,
-        headers: request.headers,
-        body: request.body,
-        redirect: 'follow',
+        headers,
+        body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : undefined,
       });
 
-      return fetch(apiRequest);
+      // Return response with CORS headers (in case needed)
+      return new Response(apiResponse.body, {
+        status: apiResponse.status,
+        statusText: apiResponse.statusText,
+        headers: apiResponse.headers,
+      });
     }
 
     // Serve static assets for everything else

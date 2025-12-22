@@ -14,7 +14,7 @@ app.use('*', requireAuth);
  */
 app.get('/', async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT id, slug, name, is_seed, created_at, updated_at
+    `SELECT id, slug, name, created_at, updated_at
      FROM principles
      WHERE deleted_at IS NULL
      ORDER BY updated_at DESC`
@@ -36,8 +36,8 @@ app.post('/', async (c) => {
   const now = new Date().toISOString();
 
   await c.env.DB.prepare(
-    `INSERT INTO principles (id, slug, name, is_seed, created_by, created_at, updated_at)
-     VALUES (?, ?, ?, 0, ?, ?, ?)`
+    `INSERT INTO principles (id, slug, name, created_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?)`
   ).bind(id, slug, name || '(untitled)', email, now, now).run();
 
   return c.json({ id, slug }, 201);
@@ -50,7 +50,7 @@ app.get('/:slug', async (c) => {
   const { slug } = c.req.param();
 
   const row = await c.env.DB.prepare(
-    `SELECT id, slug, name, is_seed, seed_expires_at, created_by, created_at, updated_at, version
+    `SELECT id, slug, name, created_by, created_at, updated_at, version
      FROM principles
      WHERE slug = ? AND deleted_at IS NULL`
   ).bind(slug).first();
@@ -124,7 +124,7 @@ app.get('/:id/metadata', async (c) => {
   const { id } = c.req.param();
 
   const row = await c.env.DB.prepare(
-    `SELECT id, slug, name, is_seed, seed_expires_at, deleted_at
+    `SELECT id, slug, name, deleted_at
      FROM principles
      WHERE id = ?`
   ).bind(id).first();
@@ -143,8 +143,6 @@ app.patch('/:id/metadata', async (c) => {
   const { id } = c.req.param();
   const body = await c.req.json<{
     name?: string;
-    is_seed?: boolean;
-    seed_expires_at?: string | null;
   }>();
 
   const now = new Date().toISOString();
@@ -152,15 +150,11 @@ app.patch('/:id/metadata', async (c) => {
   const result = await c.env.DB.prepare(
     `UPDATE principles
      SET name = COALESCE(?, name),
-         is_seed = COALESCE(?, is_seed),
-         seed_expires_at = COALESCE(?, seed_expires_at),
          updated_at = ?,
          version = version + 1
      WHERE id = ? AND deleted_at IS NULL`
   ).bind(
     body.name ?? null,
-    body.is_seed !== undefined ? (body.is_seed ? 1 : 0) : null,
-    body.seed_expires_at,
     now,
     id
   ).run();

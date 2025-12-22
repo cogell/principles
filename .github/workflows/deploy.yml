@@ -161,7 +161,7 @@ jobs:
       - name: Build Client
         run: pnpm --filter @principles/client build
         env:
-          VITE_API_URL: https://principles-api.cogell.workers.dev
+          # VITE_API_URL not set - client uses same-origin proxy
           VITE_PARTY_HOST: principles-party.cogell.partykit.dev
           VITE_PARTY_NAME: principle
 

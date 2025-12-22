@@ -1,5 +1,5 @@
 import type * as Party from 'partykit/server';
-import { onConnect } from 'y-partykit';
+import { onConnect, unstable_getYDoc, type YPartyKitOptions } from 'y-partykit';
 import * as Y from 'yjs';
 import { extractIdFromRoomId } from '@principles/shared';
 
@@ -13,12 +13,9 @@ interface Env {
  * PartyKit server for collaborative principle editing via Yjs
  */
 export default class PrincipleParty implements Party.Server {
-  private ydoc: Y.Doc;
   private authHeaders: Headers | null = null;
 
-  constructor(public room: Party.Room) {
-    this.ydoc = new Y.Doc();
-  }
+  constructor(public room: Party.Room) {}
 
   get env(): Env {
     return this.room.env as Env;
@@ -50,10 +47,11 @@ export default class PrincipleParty implements Party.Server {
   }
 
   /**
-   * Called when the room starts - load existing Yjs doc or initialize defaults
+   * Build the initial Yjs doc state for new rooms or first connect.
    */
-  async onStart(): Promise<void> {
+  private async loadDocument(): Promise<Y.Doc> {
     const id = this.principleId;
+    const doc = new Y.Doc();
 
     // Try to fetch existing Yjs doc from R2 via API
     try {
@@ -61,9 +59,9 @@ export default class PrincipleParty implements Party.Server {
       if (res.ok) {
         const buffer = await res.arrayBuffer();
         if (buffer.byteLength > 0) {
-          Y.applyUpdate(this.ydoc, new Uint8Array(buffer));
-          this.initializeDefaults();
-          return;
+          Y.applyUpdate(doc, new Uint8Array(buffer));
+          this.initializeDefaults(doc);
+          return doc;
         }
       }
     } catch (e) {
@@ -74,23 +72,34 @@ export default class PrincipleParty implements Party.Server {
     try {
       const metaRes = await this.api(`/api/principles/${id}/metadata`);
       const meta = metaRes.ok ? await metaRes.json() : null;
-      this.initializeDefaults(meta);
+      this.initializeDefaults(doc, meta);
     } catch (e) {
       console.error('Failed to load metadata:', e);
-      this.initializeDefaults();
+      this.initializeDefaults(doc);
     }
+
+    return doc;
   }
 
-  private initializeDefaults(meta?: { name?: string; is_seed?: boolean; seed_expires_at?: string | null } | null) {
-    const doc = this.ydoc;
+  private get yDocOptions(): YPartyKitOptions {
+    return {
+      load: async () => this.loadDocument(),
+      callback: {
+        handler: async (doc) => {
+          await this.persistDocument(doc);
+        },
+        debounceWait: 2000,
+        debounceMaxWait: 10000,
+      },
+    };
+  }
+
+  private initializeDefaults(
+    doc: Y.Doc,
+    meta?: { name?: string } | null
+  ) {
     if (!doc.getText('name').length && meta?.name) doc.getText('name').insert(0, meta.name);
-    if (!doc.getText('status').length) doc.getText('status').insert(0, 'draft');
-    if (!doc.getText('confidence').length) doc.getText('confidence').insert(0, 'emerging');
     doc.getArray('domains');
-    if (!doc.getText('is_seed').length) doc.getText('is_seed').insert(0, meta?.is_seed ? 'true' : 'false');
-    if (!doc.getText('seed_expires_at').length && meta?.seed_expires_at) {
-      doc.getText('seed_expires_at').insert(0, meta.seed_expires_at);
-    }
     doc.getText('context');
     doc.getText('tension');
     doc.getText('therefore');
@@ -100,12 +109,12 @@ export default class PrincipleParty implements Party.Server {
   /**
    * Called periodically to persist changes
    */
-  private async persistDocument(): Promise<void> {
+  private async persistDocument(doc: Y.Doc): Promise<void> {
     const id = this.principleId;
 
     // Write Yjs doc to R2 via API
     try {
-      const update = Y.encodeStateAsUpdate(this.ydoc);
+      const update = Y.encodeStateAsUpdate(doc);
       const yjsRes = await this.api(`/api/principles/${id}/yjs`, {
         method: 'PUT',
         body: update.buffer as ArrayBuffer,
@@ -114,24 +123,23 @@ export default class PrincipleParty implements Party.Server {
 
       if (!yjsRes.ok) {
         console.error('Yjs write failed:', yjsRes.status);
-        return;
       }
     } catch (e) {
       console.error('Yjs write failed:', e);
-      return;
     }
 
     // Update metadata (best-effort)
-    const name = this.ydoc.getText('name').toString().trim();
-    const isSeed = this.ydoc.getText('is_seed').toString() === 'true';
-    const seedExpiresAt = this.ydoc.getText('seed_expires_at').toString() || null;
+    const name = doc.getText('name').toString().trim();
 
     try {
-      await this.api(`/api/principles/${id}/metadata`, {
+      const res = await this.api(`/api/principles/${id}/metadata`, {
         method: 'PATCH',
-        body: JSON.stringify({ name: name || '(untitled)', is_seed: isSeed, seed_expires_at: seedExpiresAt }),
+        body: JSON.stringify({ name: name || '(untitled)' }),
         headers: { 'Content-Type': 'application/json' },
       });
+      if (!res.ok) {
+        console.error('Metadata update failed:', res.status);
+      }
     } catch (e) {
       console.error('Metadata update failed (non-fatal):', e);
     }
@@ -150,15 +158,17 @@ export default class PrincipleParty implements Party.Server {
 
     // Use y-partykit's onConnect for Yjs sync
     return onConnect(conn, this.room, {
-      persist: { mode: 'snapshot' },
-      callback: {
-        handler: async () => {
-          await this.persistDocument();
-        },
-        debounceWait: 2000,
-        debounceMaxWait: 10000,
-      },
+      ...this.yDocOptions,
     });
+  }
+
+  async onClose(): Promise<void> {
+    try {
+      const doc = await unstable_getYDoc(this.room, this.yDocOptions);
+      await this.persistDocument(doc);
+    } catch (e) {
+      console.error('Failed to persist on close:', e);
+    }
   }
 
   /**

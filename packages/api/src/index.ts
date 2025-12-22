@@ -17,7 +17,10 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 // CORS middleware
 app.use('*', cors({
-  origin: (origin) => origin, // Allow all origins in dev, configure for prod
+  origin: [
+    'http://localhost:5173',
+    'https://principles-client.cogell.workers.dev',
+  ],
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'CF-Access-Authenticated-User-Email', 'X-User-Email'],
   credentials: true,

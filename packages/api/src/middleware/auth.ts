@@ -25,6 +25,11 @@ export function getAuthEmail(c: AppContext): string | null {
  * Middleware to require authentication
  */
 export async function requireAuth(c: AppContext, next: Next) {
+  // Skip auth for CORS preflight requests
+  if (c.req.method === 'OPTIONS') {
+    return next();
+  }
+
   const email = getAuthEmail(c);
   if (!email) {
     return c.json({ error: 'Unauthorized' }, 401);

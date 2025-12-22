@@ -1,4 +1,4 @@
-import type { ConfidenceLevel, Domain, PrincipleStatus } from './types.js';
+import type { Domain } from './types.js';
 
 /**
  * Available domains for principles (hardcoded for MVP)
@@ -10,28 +10,6 @@ export const DOMAINS: readonly Domain[] = [
   'communications',
   'engineering',
   'strategy',
-] as const;
-
-/**
- * Principle status options
- */
-export const STATUSES: readonly PrincipleStatus[] = [
-  'draft',
-  'active',
-  'deprecated',
-] as const;
-
-/**
- * Confidence level options with display info
- */
-export const CONFIDENCE_LEVELS: readonly {
-  value: ConfidenceLevel;
-  label: string;
-  icon: string;
-}[] = [
-  { value: 'emerging', label: 'Emerging', icon: '○' },
-  { value: 'practiced', label: 'Practiced', icon: '◐' },
-  { value: 'proven', label: 'Proven', icon: '●' },
 ] as const;
 
 /**

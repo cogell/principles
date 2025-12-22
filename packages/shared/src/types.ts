@@ -1,14 +1,4 @@
 /**
- * Status of a principle in its lifecycle
- */
-export type PrincipleStatus = 'draft' | 'active' | 'deprecated';
-
-/**
- * Confidence level indicating how proven a principle is
- */
-export type ConfidenceLevel = 'emerging' | 'practiced' | 'proven';
-
-/**
  * Domain categories for principles
  */
 export type Domain =
@@ -26,8 +16,6 @@ export interface PrincipleMetadata {
   id: string;
   slug: string;
   name: string;
-  is_seed: boolean;
-  seed_expires_at: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -42,7 +30,6 @@ export interface PrincipleListItem {
   id: string;
   slug: string;
   name: string;
-  is_seed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -60,6 +47,8 @@ export interface AwarenessState {
     field: string | null;
     position: number;
   } | null;
+  sessionId?: string;
+  updatedAt?: number;
 }
 
 /**
@@ -67,11 +56,7 @@ export interface AwarenessState {
  */
 export type PrincipleField =
   | 'name'
-  | 'status'
-  | 'confidence'
   | 'domains'
-  | 'is_seed'
-  | 'seed_expires_at'
   | 'context'
   | 'tension'
   | 'therefore'

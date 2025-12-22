@@ -1,23 +1,8 @@
 // Types
-export type {
-  AwarenessState,
-  ConfidenceLevel,
-  Domain,
-  PrincipleField,
-  PrincipleListItem,
-  PrincipleMetadata,
-  PrincipleStatus,
-} from './types.js';
+export type { AwarenessState, Domain, PrincipleField, PrincipleListItem, PrincipleMetadata } from './types.js';
 
 // Constants
-export {
-  CONFIDENCE_LEVELS,
-  DOMAINS,
-  extractName,
-  getPresenceColor,
-  PRESENCE_COLORS,
-  STATUSES,
-} from './constants.js';
+export { DOMAINS, extractName, getPresenceColor, PRESENCE_COLORS } from './constants.js';
 
 // Slug utilities
 export {
@@ -25,3 +10,6 @@ export {
   extractIdFromRoomId,
   generateSlug,
 } from './slug.js';
+
+// Time utilities
+export { formatRelativeTime } from './time.js';

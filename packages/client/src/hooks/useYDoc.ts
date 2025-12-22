@@ -5,6 +5,7 @@ import YPartyKitProvider from 'y-partykit/provider';
 import { createRoomId, extractName, getPresenceColor } from '@principles/shared';
 import type { AwarenessState } from '@principles/shared';
 import { env } from '@/lib/env';
+import { useUser } from '@/contexts/UserContext';
 
 type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
@@ -38,10 +39,12 @@ const dedupePresence = (entries: PresenceEntry[]) => {
 };
 
 export function useYDoc(slug: string, id: string) {
+  const { user } = useUser();
   const roomId = useMemo(() => createRoomId(slug, id), [slug, id]);
   const doc = useMemo(() => new Y.Doc(), [roomId]);
   const providerRef = useRef<YPartyKitProvider | null>(null);
   const sessionId = useMemo(() => getSessionId(), []);
+  const userEmail = user?.email || 'anonymous';
 
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const [synced, setSynced] = useState(false);
@@ -78,13 +81,12 @@ export function useYDoc(slug: string, id: string) {
     provider.on('sync', onSync);
     provider.awareness.on('change', updatePresence);
 
-    const email = env.devUserEmail || 'guest@principles.local';
     const updatedAt = Date.now();
     provider.awareness.setLocalState({
       user: {
-        email,
-        name: extractName(email),
-        color: getPresenceColor(email),
+        email: userEmail,
+        name: extractName(userEmail),
+        color: getPresenceColor(userEmail),
       },
       cursor: null,
       sessionId,
@@ -101,7 +103,7 @@ export function useYDoc(slug: string, id: string) {
       indexedDb.destroy();
       doc.destroy();
     };
-  }, [doc, roomId]);
+  }, [doc, roomId, userEmail, sessionId]);
 
   const setCursor = useCallback((cursor: AwarenessState['cursor']) => {
     const provider = providerRef.current;

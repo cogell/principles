@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import principles from './routes/principles.js';
+import { requireAuth } from './middleware/auth.js';
 
 export interface Env {
   DB: D1Database;
@@ -28,6 +29,11 @@ app.use('*', cors({
 
 // Health check
 app.get('/health', (c) => c.json({ status: 'ok' }));
+
+// Current user endpoint
+app.get('/api/me', requireAuth, (c) => {
+  return c.json({ email: c.get('userEmail') });
+});
 
 // Mount routes
 app.route('/api/principles', principles);

@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --background: 32 42% 96%;
+  --foreground: 222 18% 16%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 18% 16%;
+  --muted: 30 20% 92%;
+  --muted-foreground: 222 10% 40%;
+  --accent: 16 80% 55%;
+  --accent-foreground: 0 0% 100%;
+  --border: 25 20% 84%;
+  --ring: 16 80% 55%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  color: hsl(var(--foreground));
+  background:
+    radial-gradient(circle at 18% 12%, rgba(250, 200, 160, 0.45), transparent 55%),
+    radial-gradient(circle at 80% 18%, rgba(135, 190, 215, 0.35), transparent 50%),
+    linear-gradient(120deg, #fbf7f2 0%, #f7efe3 45%, #f7f2e8 100%);
+  background-attachment: fixed;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3 {
+  font-family: 'Fraunces', 'Times New Roman', serif;
+  letter-spacing: -0.02em;
+}
+
+::selection {
+  background: rgba(238, 120, 80, 0.35);
+}

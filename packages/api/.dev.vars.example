@@ -1,0 +1,13 @@
+# Local development overrides for wrangler dev
+# Copy to .dev.vars and fill in values
+
+# Set to "true" to bypass CF Access authentication locally
+AUTH_BYPASS=true
+
+# Email to use when AUTH_BYPASS is true
+DEV_USER_EMAIL=dev@principles.local
+
+# Shared secret for PartyKit server-to-server auth
+# Generate with: openssl rand -base64 32
+# Must match INTERNAL_API_SECRET in PartyKit
+INTERNAL_API_SECRET=

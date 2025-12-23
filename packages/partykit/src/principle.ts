@@ -120,6 +120,10 @@ export default class PrincipleParty implements Party.Server {
   private async persistDocument(doc: Y.Doc): Promise<void> {
     const id = this.principleId;
 
+    // Debug: log env vars (remove after debugging)
+    console.log(`[persistDocument] API_URL=${this.env.API_URL || 'NOT SET (using localhost)'}`);
+    console.log(`[persistDocument] CF_ACCESS_CLIENT_ID=${this.env.CF_ACCESS_CLIENT_ID ? 'SET' : 'NOT SET'}`);
+
     // Write Yjs doc to R2 via API
     try {
       const update = Y.encodeStateAsUpdate(doc);
@@ -129,8 +133,9 @@ export default class PrincipleParty implements Party.Server {
         headers: { 'Content-Type': 'application/octet-stream' },
       });
 
+      console.log(`[persistDocument] Yjs PUT response: ${yjsRes.status}`);
       if (!yjsRes.ok) {
-        console.error('Yjs write failed:', yjsRes.status);
+        console.error('Yjs write failed:', yjsRes.status, await yjsRes.text().catch(() => ''));
       }
     } catch (e) {
       console.error('Yjs write failed:', e);
@@ -138,6 +143,7 @@ export default class PrincipleParty implements Party.Server {
 
     // Update metadata (best-effort)
     const name = doc.getText('name').toString().trim();
+    console.log(`[persistDocument] Updating metadata, name="${name}"`);
 
     try {
       const res = await this.api(`/api/principles/${id}/metadata`, {
@@ -145,8 +151,9 @@ export default class PrincipleParty implements Party.Server {
         body: JSON.stringify({ name: name || '(untitled)' }),
         headers: { 'Content-Type': 'application/json' },
       });
+      console.log(`[persistDocument] Metadata PATCH response: ${res.status}`);
       if (!res.ok) {
-        console.error('Metadata update failed:', res.status);
+        console.error('Metadata update failed:', res.status, await res.text().catch(() => ''));
       }
     } catch (e) {
       console.error('Metadata update failed (non-fatal):', e);

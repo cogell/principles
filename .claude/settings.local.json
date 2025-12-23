@@ -21,7 +21,10 @@
       "Bash(pnpm:*)",
       "Bash(git push)",
       "Bash(find:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(curl:*)",
+      "Bash(npx partykit env:*)",
+      "Bash(npx partykit deploy:*)"
     ]
   }
 }

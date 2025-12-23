@@ -55,7 +55,6 @@ export default class PrincipleParty implements Party.Server {
         headers.set(key, value);
       });
     }
-    console.log(`[api] ${options.method || 'GET'} ${url}`);
     return fetch(url, {
       ...options,
       headers,
@@ -128,11 +127,6 @@ export default class PrincipleParty implements Party.Server {
   private async persistDocument(doc: Y.Doc): Promise<void> {
     const id = this.principleId;
 
-    // Debug: log env vars (remove after debugging)
-    console.log(`[persistDocument] roomId=${this.room.id}, principleId=${id}`);
-    console.log(`[persistDocument] API_URL=${this.env.API_URL || 'NOT SET (using localhost)'}`);
-    console.log(`[persistDocument] INTERNAL_API_SECRET=${this.env.INTERNAL_API_SECRET ? 'SET' : 'NOT SET'}`);
-
     // Write Yjs doc to R2 via API
     try {
       const update = Y.encodeStateAsUpdate(doc);
@@ -142,9 +136,8 @@ export default class PrincipleParty implements Party.Server {
         headers: { 'Content-Type': 'application/octet-stream' },
       });
 
-      console.log(`[persistDocument] Yjs PUT response: ${yjsRes.status}`);
       if (!yjsRes.ok) {
-        console.error('Yjs write failed:', yjsRes.status, await yjsRes.text().catch(() => ''));
+        console.error('Yjs write failed:', yjsRes.status);
       }
     } catch (e) {
       console.error('Yjs write failed:', e);
@@ -152,7 +145,6 @@ export default class PrincipleParty implements Party.Server {
 
     // Update metadata (best-effort)
     const name = doc.getText('name').toString().trim();
-    console.log(`[persistDocument] Updating metadata, name="${name}"`);
 
     try {
       const res = await this.api(`/api/principles/${id}/metadata`, {
@@ -160,9 +152,8 @@ export default class PrincipleParty implements Party.Server {
         body: JSON.stringify({ name: name || '(untitled)' }),
         headers: { 'Content-Type': 'application/json' },
       });
-      console.log(`[persistDocument] Metadata PATCH response: ${res.status}`);
       if (!res.ok) {
-        console.error('Metadata update failed:', res.status, await res.text().catch(() => ''));
+        console.error('Metadata update failed:', res.status);
       }
     } catch (e) {
       console.error('Metadata update failed (non-fatal):', e);
@@ -184,7 +175,6 @@ export default class PrincipleParty implements Party.Server {
     if (userEmail) {
       this.authHeaders.set('X-User-Email', userEmail);
     }
-    console.log(`[onConnect] userEmail=${userEmail || 'NOT SET'}`);
 
     // Use y-partykit's onConnect for Yjs sync
     return onConnect(conn, this.room, {

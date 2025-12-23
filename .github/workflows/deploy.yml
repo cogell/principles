@@ -200,12 +200,9 @@ jobs:
           key: build-${{ github.sha }}
 
       - name: Deploy PartyKit
-        working-directory: packages/partykit
-        run: |
-          npx partykit deploy \
-            --var API_URL=https://principles-api.cogell.workers.dev \
-            --var CF_ACCESS_CLIENT_ID=${{ secrets.CF_ACCESS_CLIENT_ID }} \
-            --var CF_ACCESS_CLIENT_SECRET=${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        # Note: API_URL, CF_ACCESS_CLIENT_ID, CF_ACCESS_CLIENT_SECRET
+        # are set via `partykit env add` (not passed at deploy time)
+        run: pnpm --filter @principles/partykit run deploy
         env:
           PARTYKIT_LOGIN: ${{ secrets.PARTYKIT_LOGIN }}
           PARTYKIT_TOKEN: ${{ secrets.PARTYKIT_TOKEN }}

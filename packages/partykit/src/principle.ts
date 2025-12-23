@@ -9,6 +9,9 @@ interface Env {
   DEV_USER_EMAIL?: string;
   // Shared secret for authenticating API calls
   INTERNAL_API_SECRET?: string;
+  // CF Access Service Token (to bypass CF Access proxy)
+  CF_ACCESS_CLIENT_ID?: string;
+  CF_ACCESS_CLIENT_SECRET?: string;
 }
 
 /**
@@ -37,7 +40,12 @@ export default class PrincipleParty implements Party.Server {
   private async api(path: string, options: RequestInit = {}): Promise<Response> {
     const url = `${this.apiBase}${path}`;
     const headers = new Headers(options.headers);
-    // Add internal secret for server-to-server auth
+    // Add CF Access Service Token to bypass CF Access proxy
+    if (this.env.CF_ACCESS_CLIENT_ID && this.env.CF_ACCESS_CLIENT_SECRET) {
+      headers.set('CF-Access-Client-Id', this.env.CF_ACCESS_CLIENT_ID);
+      headers.set('CF-Access-Client-Secret', this.env.CF_ACCESS_CLIENT_SECRET);
+    }
+    // Add internal secret for Worker-level auth
     if (this.env.INTERNAL_API_SECRET) {
       headers.set('X-Internal-Secret', this.env.INTERNAL_API_SECRET);
     }

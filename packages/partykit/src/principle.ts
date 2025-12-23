@@ -7,6 +7,9 @@ interface Env {
   API_URL?: string;
   AUTH_BYPASS?: string;
   DEV_USER_EMAIL?: string;
+  // CF Access Service Token for API calls
+  CF_ACCESS_CLIENT_ID?: string;
+  CF_ACCESS_CLIENT_SECRET?: string;
 }
 
 /**
@@ -34,7 +37,12 @@ export default class PrincipleParty implements Party.Server {
 
   private async api(path: string, options: RequestInit = {}): Promise<Response> {
     const headers = new Headers(options.headers);
-    // Copy auth headers if set
+    // Add CF Access Service Token for authenticated API calls
+    if (this.env.CF_ACCESS_CLIENT_ID && this.env.CF_ACCESS_CLIENT_SECRET) {
+      headers.set('CF-Access-Client-Id', this.env.CF_ACCESS_CLIENT_ID);
+      headers.set('CF-Access-Client-Secret', this.env.CF_ACCESS_CLIENT_SECRET);
+    }
+    // Copy auth headers if set (for user identity)
     if (this.authHeaders) {
       this.authHeaders.forEach((value, key) => {
         headers.set(key, value);

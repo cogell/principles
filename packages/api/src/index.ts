@@ -18,10 +18,14 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 // CORS middleware
 app.use('*', cors({
-  origin: [
-    'http://localhost:5173',
-    'https://principles-client.cogell.workers.dev',
-  ],
+  origin: (origin) => {
+    if (!origin) return null;
+    // Allow any localhost port for development
+    if (origin.startsWith('http://localhost:')) return origin;
+    // Allow production client
+    if (origin === 'https://principles-client.cogell.workers.dev') return origin;
+    return null;
+  },
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'CF-Access-Authenticated-User-Email', 'X-User-Email'],
   credentials: true,

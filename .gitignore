@@ -9,6 +9,7 @@ node_modules/
 # Build outputs
 dist/
 .wrangler/
+.partykit/
 
 # OS
 .DS_Store

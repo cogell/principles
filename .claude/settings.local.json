@@ -20,7 +20,8 @@
       "Bash(ln:*)",
       "Bash(pnpm:*)",
       "Bash(git push)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(ls:*)"
     ]
   }
 }

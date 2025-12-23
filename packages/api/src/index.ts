@@ -8,6 +8,7 @@ export interface Env {
   R2: R2Bucket;
   AUTH_BYPASS?: string;
   DEV_USER_EMAIL?: string;
+  INTERNAL_API_SECRET?: string;
 }
 
 export interface Variables {

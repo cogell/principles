@@ -7,9 +7,8 @@ interface Env {
   API_URL?: string;
   AUTH_BYPASS?: string;
   DEV_USER_EMAIL?: string;
-  // CF Access Service Token for API calls
-  CF_ACCESS_CLIENT_ID?: string;
-  CF_ACCESS_CLIENT_SECRET?: string;
+  // Shared secret for authenticating API calls
+  INTERNAL_API_SECRET?: string;
 }
 
 /**
@@ -38,10 +37,9 @@ export default class PrincipleParty implements Party.Server {
   private async api(path: string, options: RequestInit = {}): Promise<Response> {
     const url = `${this.apiBase}${path}`;
     const headers = new Headers(options.headers);
-    // Add CF Access Service Token for authenticated API calls
-    if (this.env.CF_ACCESS_CLIENT_ID && this.env.CF_ACCESS_CLIENT_SECRET) {
-      headers.set('CF-Access-Client-Id', this.env.CF_ACCESS_CLIENT_ID);
-      headers.set('CF-Access-Client-Secret', this.env.CF_ACCESS_CLIENT_SECRET);
+    // Add internal secret for server-to-server auth
+    if (this.env.INTERNAL_API_SECRET) {
+      headers.set('X-Internal-Secret', this.env.INTERNAL_API_SECRET);
     }
     // Copy auth headers if set (for user identity)
     if (this.authHeaders) {
@@ -125,7 +123,7 @@ export default class PrincipleParty implements Party.Server {
     // Debug: log env vars (remove after debugging)
     console.log(`[persistDocument] roomId=${this.room.id}, principleId=${id}`);
     console.log(`[persistDocument] API_URL=${this.env.API_URL || 'NOT SET (using localhost)'}`);
-    console.log(`[persistDocument] CF_ACCESS_CLIENT_ID=${this.env.CF_ACCESS_CLIENT_ID ? 'SET' : 'NOT SET'}`);
+    console.log(`[persistDocument] INTERNAL_API_SECRET=${this.env.INTERNAL_API_SECRET ? 'SET' : 'NOT SET'}`);
 
     // Write Yjs doc to R2 via API
     try {

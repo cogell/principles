@@ -11,14 +11,13 @@ export function getAuthEmail(c: AppContext): string | null {
   const cfEmail = c.req.header('CF-Access-Authenticated-User-Email');
   if (cfEmail) return cfEmail;
 
-  // CF Access Service Token (server-to-server, e.g., PartyKit)
-  // Service tokens bypass CF Access but don't provide user email,
-  // so we trust X-User-Email header when service token is present
-  const serviceTokenId = c.req.header('CF-Access-Client-Id');
-  if (serviceTokenId) {
+  // Internal API secret (server-to-server, e.g., PartyKit)
+  // PartyKit sends this secret to authenticate API calls
+  const internalSecret = c.req.header('X-Internal-Secret');
+  if (internalSecret && c.env.INTERNAL_API_SECRET && internalSecret === c.env.INTERNAL_API_SECRET) {
     const forwardedEmail = c.req.header('X-User-Email');
     if (forwardedEmail) return forwardedEmail;
-    // Service token without user context - use service account
+    // Service call without user context - use service account
     return 'service@principles.internal';
   }
 

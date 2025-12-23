@@ -7,9 +7,20 @@ type AppContext = Context<{ Bindings: Env; Variables: Variables }>;
  * Extract authenticated user email from CF Access or dev bypass
  */
 export function getAuthEmail(c: AppContext): string | null {
-  // CF Access header (production)
+  // CF Access header (production - user via browser)
   const cfEmail = c.req.header('CF-Access-Authenticated-User-Email');
   if (cfEmail) return cfEmail;
+
+  // CF Access Service Token (server-to-server, e.g., PartyKit)
+  // Service tokens bypass CF Access but don't provide user email,
+  // so we trust X-User-Email header when service token is present
+  const serviceTokenId = c.req.header('CF-Access-Client-Id');
+  if (serviceTokenId) {
+    const forwardedEmail = c.req.header('X-User-Email');
+    if (forwardedEmail) return forwardedEmail;
+    // Service token without user context - use service account
+    return 'service@principles.internal';
+  }
 
   // Dev bypass
   if (c.env.AUTH_BYPASS === 'true') {

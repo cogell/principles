@@ -57,6 +57,8 @@ export function useYDoc(slug: string, id: string) {
 
     const provider = new YPartyKitProvider(env.partyHost, roomId, doc, {
       party: env.partyName,
+      // Pass authenticated email to PartyKit for API calls
+      params: { email: userEmail },
     });
     providerRef.current = provider;
 

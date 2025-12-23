@@ -36,6 +36,7 @@ export default class PrincipleParty implements Party.Server {
   }
 
   private async api(path: string, options: RequestInit = {}): Promise<Response> {
+    const url = `${this.apiBase}${path}`;
     const headers = new Headers(options.headers);
     // Add CF Access Service Token for authenticated API calls
     if (this.env.CF_ACCESS_CLIENT_ID && this.env.CF_ACCESS_CLIENT_SECRET) {
@@ -48,7 +49,8 @@ export default class PrincipleParty implements Party.Server {
         headers.set(key, value);
       });
     }
-    return fetch(`${this.apiBase}${path}`, {
+    console.log(`[api] ${options.method || 'GET'} ${url}`);
+    return fetch(url, {
       ...options,
       headers,
     });
@@ -121,6 +123,7 @@ export default class PrincipleParty implements Party.Server {
     const id = this.principleId;
 
     // Debug: log env vars (remove after debugging)
+    console.log(`[persistDocument] roomId=${this.room.id}, principleId=${id}`);
     console.log(`[persistDocument] API_URL=${this.env.API_URL || 'NOT SET (using localhost)'}`);
     console.log(`[persistDocument] CF_ACCESS_CLIENT_ID=${this.env.CF_ACCESS_CLIENT_ID ? 'SET' : 'NOT SET'}`);
 
@@ -164,12 +167,18 @@ export default class PrincipleParty implements Party.Server {
    * Handle incoming WebSocket connections
    */
   async onConnect(conn: Party.Connection, ctx: Party.ConnectionContext): Promise<void> {
+    // Extract user email from query params (passed by client) or headers
+    const url = new URL(ctx.request.url);
+    const emailFromParams = url.searchParams.get('email');
+    const cfEmail = ctx.request.headers.get('CF-Access-Authenticated-User-Email');
+
     // Store auth headers for API calls
     this.authHeaders = new Headers();
-    const cfEmail = ctx.request.headers.get('CF-Access-Authenticated-User-Email');
-    const devEmail = ctx.request.headers.get('X-User-Email');
-    if (cfEmail) this.authHeaders.set('CF-Access-Authenticated-User-Email', cfEmail);
-    if (devEmail) this.authHeaders.set('X-User-Email', devEmail);
+    const userEmail = cfEmail || emailFromParams;
+    if (userEmail) {
+      this.authHeaders.set('X-User-Email', userEmail);
+    }
+    console.log(`[onConnect] userEmail=${userEmail || 'NOT SET'}`);
 
     // Use y-partykit's onConnect for Yjs sync
     return onConnect(conn, this.room, {
@@ -190,15 +199,20 @@ export default class PrincipleParty implements Party.Server {
    * Validate connection before allowing it
    */
   async onRequest(request: Party.Request): Promise<Response> {
+    // Extract user email from query params (passed by client) or headers
+    const url = new URL(request.url);
+    const emailFromParams = url.searchParams.get('email');
+    const cfEmail = request.headers.get('CF-Access-Authenticated-User-Email');
+
     // Store auth headers for API calls
     this.authHeaders = new Headers();
-    const cfEmail = request.headers.get('CF-Access-Authenticated-User-Email');
-    const devEmail = request.headers.get('X-User-Email');
-    if (cfEmail) this.authHeaders.set('CF-Access-Authenticated-User-Email', cfEmail);
-    if (devEmail) this.authHeaders.set('X-User-Email', devEmail);
+    const userEmail = cfEmail || emailFromParams;
+    if (userEmail) {
+      this.authHeaders.set('X-User-Email', userEmail);
+    }
 
     // Verify authentication
-    const email = cfEmail ?? (this.env.AUTH_BYPASS === 'true' ? this.env.DEV_USER_EMAIL : null);
+    const email = userEmail ?? (this.env.AUTH_BYPASS === 'true' ? this.env.DEV_USER_EMAIL : null);
     if (!email) {
       return new Response('Unauthorized', { status: 401 });
     }
